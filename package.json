@@ -1,0 +1,19 @@
+{
+  "name": "madda-fullstack-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend/*"
+  ],
+  "scripts": {
+    "dev:backend": "concurrently \"mvn spring-boot:run -pl user-service\" \"mvn spring-boot:run -pl sourcing-service\" \"mvn spring-boot:run -pl subscription-service\" \"mvn spring-boot:run -pl api-gateway\"",
+    "dev:frontend": "concurrently \"npm run dev --workspace=shell\" \"npm run dev --workspace=auth-microfrontend\" \"npm run dev --workspace=sourcing\" \"npm run dev --workspace=subscription\" \"npm run dev --workspace=shared-components\"",
+    "dev:fullstack": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:frontend": "npm run build --workspaces",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

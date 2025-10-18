@@ -1,0 +1,69 @@
+version: '3.8'
+services:
+  # Backend Services
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_MULTIPLE_DATABASES: madda_user_db,madda_sourcing_db,madda_subscription_db
+      POSTGRES_USER: madda_user
+      POSTGRES_PASSWORD: madda_password
+    ports: ["5432:5432"]
+    volumes:
+      - ./scripts/database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    ports: ["8080:8080"]
+    depends_on: [postgres, redis]
+
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/madda_user_db
+    depends_on: [postgres]
+
+  sourcing-service:
+    build:
+      context: ./backend/sourcing-service
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/madda_sourcing_db
+    depends_on: [postgres]
+
+  subscription-service:
+    build:
+      context: ./backend/subscription-service
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/madda_subscription_db
+    depends_on: [postgres]
+
+  # Frontend Services
+  shell-app:
+    build: ./frontend/shell
+    ports: ["3000:3000"]
+    depends_on: [api-gateway]
+
+  auth-frontend:
+    build: ./frontend/auth-microfrontend
+    ports: ["3001:3001"]
+
+  sourcing-frontend:
+    build: ./frontend/sourcing
+    ports: ["3002:3002"]
+
+  subscription-frontend:
+    build: ./frontend/subscription
+    ports: ["3003:3003"]
+
+  shared-components:
+    build: ./frontend/shared-components
+    ports: ["3004:3004"]
