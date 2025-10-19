@@ -14,11 +14,17 @@ import reactor.core.publisher.Mono;
 
 import java.security.Key;
 
+import com.madda.construction.gateway.config.RouterValidator;
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Component
 public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
 
     @Value("${jwt.secret}")
     private String secret;
+
+    @Autowired
+    private RouterValidator routerValidator;
 
     public static class Config {
         // Put the configuration properties here
@@ -31,24 +37,25 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                return onError(exchange, "No authorization header", HttpStatus.UNAUTHORIZED);
-            }
+            if (routerValidator.isSecured.test(exchange.getRequest())) {
+                if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                    return onError(exchange, "No authorization header", HttpStatus.UNAUTHORIZED);
+                }
 
-            String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                authHeader = authHeader.substring(7);
-            }
+                String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    authHeader = authHeader.substring(7);
+                }
 
-            try {
-                Key key = Keys.hmacShaKeyFor(secret.getBytes());
-                Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(authHeader).getBody();
-                // You can add claims to the request headers if needed by downstream services
-                exchange.getRequest().mutate().header("X-auth-user-id", claims.getSubject()).build();
-            } catch (Exception e) {
-                return onError(exchange, "Authorization error", HttpStatus.UNAUTHORIZED);
+                try {
+                    Key key = Keys.hmacShaKeyFor(secret.getBytes());
+                    Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(authHeader).getBody();
+                    // You can add claims to the request headers if needed by downstream services
+                    exchange.getRequest().mutate().header("X-auth-user-id", claims.getSubject()).build();
+                } catch (Exception e) {
+                    return onError(exchange, "Authorization error", HttpStatus.UNAUTHORIZED);
+                }
             }
-
             return chain.filter(exchange);
         };
     }

@@ -1,143 +1,172 @@
-# Learning the Madda Construction Platform MVP
+# Learning the Madda Platform: A Backend-Focused Guide
 
-Welcome to the Madda Construction Platform MVP! This document will guide you through the project's architecture, components, and how to get it up and running.
+Welcome to the backend of the Madda Construction Platform! This document provides a comprehensive guide to understanding, running, and presenting the backend microservices that power the Madda application.
 
-## 1. Project Overview
+## 1. What is a Backend?
 
-This project is a full-stack Model-View-Presenter (MVP) for a B2B construction materials sourcing platform called "Madda." It's built with a modern architecture that separates concerns into microservices for the backend and microfrontends for the frontend.
+The backend is the "engine" of any application. It's the part that users don't see directly, but it handles all the critical logic, data storage, and security. For the Madda platform, the backend is responsible for:
 
-### 1.1. Technology Stack
+*   **User Management:** Registering new companies, handling logins, and securing user data.
+*   **Business Logic:** Managing sourcing requests for construction materials and handling user subscriptions.
+*   **Data Storage:** Securely storing all information in a database.
+*   **API (Application Programming Interface):** Providing a set of rules and endpoints that the frontend (or other services) can use to communicate with it.
 
-**Backend (Microservices):**
-- **Java 17** with **Spring Boot 3.2.0**
-- **Spring Security 6** + JWT authentication
-- **PostgreSQL 15** with JPA/Hibernate
-- **Maven** for dependency management
-- **OpenAPI 3** with Swagger UI documentation
+## 2. Microservices Architecture: The "Madda" Way
 
-**Frontend (Microfrontends):**
-- **React 18** with TypeScript
-- **Module Federation** for microfrontends
-- **Vite** as a build tool
-- **Tailwind CSS** for styling
-- **React Query** for state management
-- **React Router** for routing
-- **Axios** for API calls
+Instead of building one single, monolithic backend application, the Madda platform uses a **microservices architecture**. This means the backend is broken down into several smaller, independent services that work together.
 
-### 1.2. Architecture
+**Why Microservices?**
+*   **Isolation:** Each service runs independently. If one service has a problem, it doesn't crash the entire system.
+*   **Scalability:** We can scale up specific services that are under heavy load without scaling the whole application.
+*   **Maintainability:** Each service is smaller and easier to understand, develop, and update.
 
-The application is divided into several independent services that communicate with each other:
+### 2.1. The Madda Backend Services
 
-- **Backend:**
-  - `api-gateway`: The single entry point for all frontend requests. It routes requests to the appropriate microservice and handles cross-cutting concerns like authentication.
-  - `user-service`: Manages user registration, login, and profile data.
-  - `sourcing-service`: Handles the creation and management of material sourcing requests.
-  - `subscription-service`: Manages user subscription plans and status.
+The Madda backend consists of four distinct microservices:
 
-- **Frontend:**
-  - `shell`: The main application that orchestrates the other microfrontends. It provides the main layout, navigation, and routing.
-  - `auth-microfrontend`: Contains the login, registration, and profile pages.
-  - `sourcing-microfrontend`: Contains the pages for creating, viewing, and managing sourcing requests.
-  - `subscription-microfrontend`: Contains the pages for viewing and managing subscription plans.
-  - `shared-components`: A library of reusable React components that are used across the other microfrontends.
+1.  **API Gateway (`api-gateway`)**
+    *   **Purpose:** The single entry point for all incoming requests. It acts as a gatekeeper, receiving requests and forwarding them to the correct internal service.
+    *   **Key Responsibilities:**
+        *   **Routing:** Directs traffic (e.g., `/api/v1/auth/*` goes to the `user-service`).
+        *   **Security:** Checks for a valid JWT (JSON Web Token) on protected endpoints.
+        *   **CORS:** Manages Cross-Origin Resource Sharing to allow frontend applications to communicate with it.
+    *   **Port:** `8080`
 
-## 2. Getting Started
+2.  **User Service (`user-service`)**
+    *   **Purpose:** Handles all user-related operations.
+    *   **Key Responsibilities:**
+        *   User registration and login.
+        *   JWT generation upon successful login.
+        *   Manages user profile data.
+    *   **Port:** `8081`
+    *   **Swagger UI:** `http://localhost:8081/swagger-ui.html`
 
-### 2.1. Prerequisites
+3.  **Sourcing Service (`sourcing-service`)**
+    *   **Purpose:** Manages the core business logic of creating and viewing material sourcing requests.
+    *   **Key Responsibilities:**
+        *   Creating new sourcing requests.
+        *   Listing all sourcing requests for the marketplace.
+        *   Retrieving requests for a specific user.
+    *   **Port:** `8082`
+    *   **Swagger UI:** `http://localhost:8082/swagger-ui.html`
 
-- **Docker:** The easiest way to run the application is with Docker. Make sure you have Docker and Docker Compose installed.
-- **Node.js:** If you want to run the frontend services manually, you'll need Node.js (v18 or later) and npm.
-- **Java:** If you want to run the backend services manually, you'll need Java 17 and Maven.
+4.  **Subscription Service (`subscription-service`)**
+    *   **Purpose:** Manages user subscription plans and status.
+    *   **Key Responsibilities:**
+        *   Listing available subscription plans.
+        *   Allowing users to subscribe to a plan.
+        *   Checking a user's current subscription status.
+    *   **Port:** `8083`
+    *   **Swagger UI:** `http://localhost:8083/swagger-ui.html`
 
-### 2.2. Running the Application
+## 3. How to Run the Backend
 
-**Option 1: Docker Compose (Recommended)**
+To run the backend services, you will need:
+*   Java 17
+*   Maven 3.8 or higher
 
-This is the simplest way to get the entire application running.
+Follow these steps to start the entire backend infrastructure.
 
-1.  **Build and start the services:**
-    ```bash
-    docker-compose up --build -d
+### Step 1: Set the JWT Secret
+
+The services use a shared secret to sign and validate JWTs. Open your terminal and set it as an environment variable.
+
+```bash
+export JWT_SECRET="404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+```
+**Note:** This variable is only set for your current terminal session. If you open a new terminal, you must set it again.
+
+### Step 2: Start the Services
+
+Open four separate terminal windows or tabs. In each terminal, run one of the following commands. It's recommended to run them in this order.
+
+**Terminal 1: API Gateway**
+```bash
+mvn -f backend/api-gateway/pom.xml spring-boot:run
+```
+
+**Terminal 2: User Service**
+```bash
+mvn -f backend/user-service/pom.xml spring-boot:run
+```
+
+**Terminal 3: Sourcing Service**
+```bash
+mvn -f backend/sourcing-service/pom.xml spring-boot:run
+```
+
+**Terminal 4: Subscription Service**
+```bash
+mvn -f backend/subscription-service/pom.xml spring-boot:run
+```
+
+Wait for each service to start up. You'll see the Spring Boot banner and log messages indicating that the service is running on its respective port.
+
+## 4. Presenting and Testing with Swagger UI
+
+**Swagger UI** provides a user-friendly, interactive web interface for exploring and testing your APIs. Each of our business logic services has its own Swagger UI.
+
+### 4.1. The Workflow: A Step-by-Step API Demo
+
+This workflow demonstrates the end-to-end functionality of the backend.
+
+**Step 1: Register a New User**
+
+1.  Go to the **User Service Swagger UI**: `http://localhost:8081/swagger-ui.html`
+2.  Find the `POST /api/v1/auth/register` endpoint and expand it.
+3.  Click **"Try it out"**.
+4.  Edit the example request body:
+    ```json
+    {
+      "companyName": "Test Construction Inc.",
+      "email": "test@construction.com",
+      "password": "password123"
+    }
     ```
+5.  Click **"Execute"**. You should receive a `200 OK` response with the new user's details.
 
-2.  **Access the application:**
-    - **Main App:** http://localhost:3000
-    - **API Gateway:** http://localhost:8080
-    - **User Service Swagger UI:** http://localhost:8081/swagger-ui.html
-    - **Sourcing Service Swagger UI:** http://localhost:8082/swagger-ui.html
-    - **Subscription Service Swagger UI:** http://localhost:8083/swagger-ui.html
+**Step 2: Log In and Get a JWT**
 
-**Option 2: Manual Development**
-
-If you prefer to run the services manually, you can use the following commands:
-
-1.  **Start the backend services:**
-    ```bash
-    npm run dev:backend
+1.  Still on the User Service Swagger UI, find the `POST /api/v1/auth/login` endpoint.
+2.  Click **"Try it out"**.
+3.  Use the credentials you just registered:
+    ```json
+    {
+      "email": "test@construction.com",
+      "password": "password123"
+    }
     ```
+4.  Click **"Execute"**. You will receive a response containing a `token`. **Copy this entire token string.** It's your authentication key for all other requests.
 
-2.  **Start the frontend services:**
-    ```bash
-    npm run dev:frontend
+**Step 3: Authorize Your Swagger UIs**
+
+To access protected endpoints, you must tell Swagger to use your JWT.
+
+1.  At the top right of the Swagger UI page (for the User, Sourcing, and Subscription services), click the **"Authorize"** button.
+2.  In the popup, paste your JWT into the **"Value"** field.
+3.  Click **"Authorize"** and then **"Close"**. Your requests from this page are now authenticated.
+
+**Step 4: Create a Sourcing Request**
+
+1.  Go to the **Sourcing Service Swagger UI**: `http://localhost:8082/swagger-ui.html`
+2.  **Authorize** it with your JWT as described above.
+3.  Find the `POST /api/v1/sourcing` endpoint.
+4.  Click **"Try it out"** and use the following request body:
+    ```json
+    {
+      "materialCategory": "STEEL",
+      "materialName": "Rebar 10mm",
+      "quantity": 500,
+      "unit": "ton"
+    }
     ```
+5.  Click **"Execute"**. You should get a `200 OK` response.
 
-3.  **Access the application:**
-    - **Main App:** http://localhost:3000
-    - **Auth Microfrontend:** http://localhost:3001
-    - **Sourcing Microfrontend:** http://localhost:3002
-    - **Subscription Microfrontend:** http://localhost:3003
-    - **Shared Components:** http://localhost:3004
+**Step 5: View Your Subscription Plans**
 
-## 3. Exploring the Codebase
+1.  Go to the **Subscription Service Swagger UI**: `http://localhost:8083/swagger-ui.html`
+2.  **Authorize** it with your JWT.
+3.  Find the `GET /api/v1/plans` endpoint.
+4.  Click **"Try it out"** and then **"Execute"**. You will see a list of available subscription plans.
 
-### 3.1. Backend
-
-- **`backend/api-gateway`**: The entry point for all API requests. It uses Spring Cloud Gateway to route requests to the appropriate microservice.
-- **`backend/user-service`**: Handles user authentication and management.
-- **`backend/sourcing-service`**: Manages sourcing requests.
-- **`backend/subscription-service`**: Manages user subscriptions.
-
-Each backend service is a standard Spring Boot application. You can explore the code in the `src/main/java` directory of each service.
-
-### 3.2. Frontend
-
-- **`frontend/shell`**: The main application that ties everything together. It uses Module Federation to load the other microfrontends.
-- **`frontend/auth-microfrontend`**: Contains the UI for authentication.
-- **`frontend/sourcing`**: Contains the UI for sourcing requests.
-- **`frontend/subscription`**: Contains the UI for subscriptions.
-- **`frontend/shared-components`**: A library of reusable React components.
-
-Each frontend service is a standard React application built with Vite. You can explore the code in the `src` directory of each service.
-
-## 4. How It Works: Key Concepts
-
-### 4.1. Microservices
-
-The backend is split into small, independent services. This has several advantages:
-
-- **Scalability:** Each service can be scaled independently.
-- **Resilience:** If one service fails, the others can continue to run.
-- **Maintainability:** Each service is small and easy to understand.
-
-### 4.2. Microfrontends
-
-The frontend is also split into small, independent applications. This has similar advantages to microservices:
-
-- **Independent Teams:** Different teams can work on different parts of the application without interfering with each other.
-- **Faster Development:** Smaller codebases are easier to work with.
-- **Technology Flexibility:** Different microfrontends could potentially use different technologies.
-
-### 4.3. Module Federation
-
-Module Federation is a feature of Webpack (and supported by Vite through a plugin) that allows a JavaScript application to dynamically load code from another application. This is the key technology that enables the microfrontend architecture.
-
-In this project, the `shell` application uses Module Federation to load the `auth`, `sourcing`, and `subscription` microfrontends.
-
-## 5. Next Steps
-
-Now that you have a basic understanding of the project, here are some things you can do:
-
-- **Explore the code:** Dive into the source code of the different services to see how they work.
-- **Run the application:** Use Docker Compose to run the application and see it in action.
-- **Experiment:** Try making changes to the code and see what happens.
-- **Read the `Instructions.md` file:** For a more detailed breakdown of the project requirements, refer to the `Instructions.md` file in the root of the repository.
+This completes a full, backend-only demonstration of the Madda platform's core features.
